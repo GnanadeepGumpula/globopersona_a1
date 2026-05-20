@@ -1,11 +1,27 @@
+"use client";
+
 import { ArrowRight, Filter, Plus } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { recentCampaigns } from "../../data/mock-data";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui";
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui";
 
 const filters = ["All campaigns", "Scheduled", "Live", "Draft", "Archived"];
 
 export default function CampaignsPage() {
+  const [activeFilter, setActiveFilter] = useState("All campaigns");
+  const [query, setQuery] = useState("");
+
+  const visibleCampaigns = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return recentCampaigns.filter((campaign) => {
+      const matchesFilter = activeFilter === "All campaigns" || campaign.status === activeFilter;
+      const matchesQuery = !normalizedQuery || [campaign.name, campaign.audience, campaign.sent, campaign.opens, campaign.status].join(" ").toLowerCase().includes(normalizedQuery);
+      return matchesFilter && matchesQuery;
+    });
+  }, [activeFilter, query]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-3">
@@ -20,10 +36,13 @@ export default function CampaignsPage() {
             <Filter size={16} /> Filters
           </div>
           {filters.map((item, index) => (
-            <button key={item} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${index === 0 ? "bg-ink-900 text-white shadow-sm" : "bg-white text-ink-700 hover:bg-sand-50"}`}>
+            <button key={item} type="button" onClick={() => setActiveFilter(item)} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${activeFilter === item ? "bg-ink-900 text-white shadow-sm" : "bg-white text-ink-700 hover:bg-sand-50"}`}>
               {item}
             </button>
           ))}
+          <div className="ml-auto min-w-[240px] flex-1 lg:flex-none">
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search campaigns" className="h-11 w-full rounded-2xl border border-sand-200 bg-white px-4 text-sm text-ink-900 outline-none transition placeholder:text-ink-500 focus:border-accent-500 focus:ring-4 focus:ring-accent-100" />
+          </div>
         </CardContent>
 
         <CardContent className="overflow-x-auto">
@@ -39,7 +58,7 @@ export default function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-              {recentCampaigns.map((campaign) => (
+              {visibleCampaigns.map((campaign) => (
                 <tr key={campaign.name} className="rounded-[22px] bg-white shadow-sm ring-1 ring-sand-100">
                   <td className="rounded-l-[22px] px-4 py-4">
                     <p className="font-semibold text-ink-900">{campaign.name}</p>
@@ -56,6 +75,13 @@ export default function CampaignsPage() {
                   </td>
                 </tr>
               ))}
+              {!visibleCampaigns.length ? (
+                <tr>
+                  <td className="rounded-[22px] border border-dashed border-sand-100 bg-white px-4 py-8 text-sm text-ink-500" colSpan={6}>
+                    No campaigns match the current filter.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </CardContent>

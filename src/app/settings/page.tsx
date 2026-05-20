@@ -1,8 +1,13 @@
+"use client";
+
 import { ShieldCheck, Users, Webhook } from "lucide-react";
+import { useState } from "react";
 import { settingsPanels } from "../../data/mock-data";
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Textarea } from "../../components/ui";
 
 export default function SettingsPage() {
+  const [statusMessage, setStatusMessage] = useState("");
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-3">
@@ -42,6 +47,14 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            <form
+              className="space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setStatusMessage("Settings saved locally.");
+              }}
+              onReset={() => setStatusMessage("Changes reverted.")}
+            >
             <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <Label>Workspace name</Label>
@@ -74,9 +87,11 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-3 pt-2">
-              <Button>Save changes</Button>
-              <Button variant="neutral">Cancel</Button>
+              <Button type="submit">Save changes</Button>
+              <Button type="reset" variant="neutral">Cancel</Button>
             </div>
+            {statusMessage ? <p className="rounded-2xl border border-accent-100 bg-accent-50 px-4 py-3 text-sm font-medium text-accent-700">{statusMessage}</p> : null}
+            </form>
           </CardContent>
         </Card>
       </div>

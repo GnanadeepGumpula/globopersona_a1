@@ -1,4 +1,7 @@
+"use client";
+
 import { CalendarDays, CheckCircle2, Mail, Sparkles, Target } from "lucide-react";
+import { useState } from "react";
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Textarea } from "../../../components/ui";
 
 const checklist = [
@@ -9,6 +12,8 @@ const checklist = [
 ];
 
 export default function NewCampaignPage() {
+  const [statusMessage, setStatusMessage] = useState("");
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-3">
@@ -112,8 +117,9 @@ export default function NewCampaignPage() {
                   </div>
                 </div>
               </div>
-              <Button className="w-full">Save draft</Button>
-              <Button variant="neutral" className="w-full">Schedule send</Button>
+              <Button type="button" className="w-full" onClick={() => setStatusMessage("Draft saved locally.")}>Save draft</Button>
+              <Button type="button" variant="neutral" className="w-full" onClick={() => setStatusMessage("Send scheduled locally.")}>Schedule send</Button>
+              {statusMessage ? <p className="rounded-2xl border border-accent-100 bg-accent-50 px-4 py-3 text-sm font-medium text-accent-700">{statusMessage}</p> : null}
             </CardContent>
           </Card>
         </div>

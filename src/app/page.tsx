@@ -1,9 +1,27 @@
 import { ArrowRight, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { activities, campaignPerformance, dashboardStats, recentCampaigns } from "../data/mock-data";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress, StatCard } from "../components/ui";
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress, StatCard } from "../components/ui";
 
 export default function DashboardPage() {
+  const chartWidth = 720;
+  const chartHeight = 240;
+  const chartPaddingX = 28;
+  const chartPaddingY = 20;
+  const chartFloor = chartHeight - chartPaddingY;
+  const step = campaignPerformance.length > 1 ? (chartWidth - chartPaddingX * 2) / (campaignPerformance.length - 1) : 0;
+
+  const points = campaignPerformance.map((item, index) => {
+    const x = chartPaddingX + step * index;
+    const y = chartFloor - (item.value / 100) * (chartFloor - chartPaddingY);
+    return { x, y, value: item.value, label: item.label };
+  });
+
+  const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const areaPath = points.length
+    ? `${linePath} L ${points[points.length - 1].x} ${chartFloor} L ${points[0].x} ${chartFloor} Z`
+    : "";
+
   return (
     <div className="space-y-8">
       <Card className="overflow-hidden border-sand-100 bg-white/85">
@@ -16,8 +34,12 @@ export default function DashboardPage() {
               <p className="max-w-2xl text-base leading-7 text-ink-500">This redesign keeps the original product structure intact while giving the interface a cleaner hierarchy, softer surfaces, and more readable patterns for daily campaign work.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button>Launch new campaign</Button>
-              <Button variant="neutral">Review audience health</Button>
+              <Link href="/campaigns/new" className="inline-flex h-11 items-center justify-center rounded-2xl bg-ink-900 px-4 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-ink-700">
+                Launch new campaign
+              </Link>
+              <Link href="/contacts" className="inline-flex h-11 items-center justify-center rounded-2xl border border-sand-100 bg-white px-4 text-sm font-semibold text-ink-700 transition hover:border-sand-200 hover:bg-sand-50">
+                Review audience health
+              </Link>
               <Link href="/campaigns" className="inline-flex items-center gap-2 px-2 text-sm font-semibold text-accent-600">
                 Open campaigns <ArrowRight size={16} />
               </Link>
@@ -77,18 +99,34 @@ export default function DashboardPage() {
             <Badge tone="accent">+11.2% vs last week</Badge>
           </CardHeader>
           <CardContent>
-            <div className="flex h-72 items-end gap-3 rounded-[24px] border border-sand-100 bg-gradient-to-b from-white to-sand-50 p-5">
-              {campaignPerformance.map((item) => (
-                <div key={item.label} className="flex flex-1 flex-col items-center gap-3">
-                  <div className="flex w-full flex-1 items-end">
-                    <div className="w-full rounded-t-3xl bg-gradient-to-t from-accent-600 to-accent-400 shadow-sm" style={{ height: `${item.value}%` }} />
-                  </div>
-                  <div className="text-center">
+            <div className="rounded-[24px] border border-sand-100 bg-gradient-to-b from-white to-sand-50 p-5">
+              <div className="relative h-56 overflow-hidden rounded-2xl border border-sand-100 bg-white">
+                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-full w-full" role="img" aria-label="Campaign performance trend chart">
+                  {[25, 50, 75, 100].map((line) => {
+                    const y = chartFloor - (line / 100) * (chartFloor - chartPaddingY);
+                    return <line key={line} x1={chartPaddingX} y1={y} x2={chartWidth - chartPaddingX} y2={y} stroke="#efe7da" strokeDasharray="5 5" strokeWidth="1" />;
+                  })}
+
+                  {areaPath ? <path d={areaPath} fill="rgba(47, 143, 123, 0.16)" /> : null}
+                  {linePath ? <path d={linePath} fill="none" stroke="#2f8f7b" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" /> : null}
+
+                  {points.map((point) => (
+                    <g key={point.label}>
+                      <circle cx={point.x} cy={point.y} r="6" fill="#2f8f7b" />
+                      <circle cx={point.x} cy={point.y} r="3" fill="#ffffff" />
+                    </g>
+                  ))}
+                </svg>
+              </div>
+
+              <div className="mt-4 grid gap-3 text-center" style={{ gridTemplateColumns: `repeat(${campaignPerformance.length}, minmax(0, 1fr))` }}>
+                {campaignPerformance.map((item) => (
+                  <div key={`${item.label}-meta`}>
                     <p className="text-sm font-semibold text-ink-700">{item.label}</p>
                     <p className="text-xs text-ink-500">{item.value}%</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

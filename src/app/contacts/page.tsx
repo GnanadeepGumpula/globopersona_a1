@@ -1,8 +1,19 @@
-import { Download, Plus, Search } from "lucide-react";
+"use client";
+
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { audienceSegments, contacts } from "../../data/mock-data";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "../../components/ui";
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from "../../components/ui";
 
 export default function ContactsPage() {
+  const [query, setQuery] = useState("");
+
+  const visibleContacts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return contacts.filter((contact) => !normalizedQuery || [contact.name, contact.email, contact.segment, contact.status].join(" ").toLowerCase().includes(normalizedQuery));
+  }, [query]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-3">
@@ -44,7 +55,7 @@ export default function ContactsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3 rounded-2xl border border-sand-100 bg-white px-4 py-3">
               <Search className="text-ink-500" size={16} />
-              <Input className="border-0 bg-transparent px-0 focus:ring-0" placeholder="Search contacts" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} className="border-0 bg-transparent px-0 focus:ring-0" placeholder="Search contacts" />
             </div>
 
             <div className="overflow-x-auto">
@@ -58,7 +69,7 @@ export default function ContactsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {contacts.map((contact) => (
+                  {visibleContacts.map((contact) => (
                     <tr key={contact.email} className="rounded-[22px] bg-white shadow-sm ring-1 ring-sand-100">
                       <td className="rounded-l-[22px] px-4 py-4 font-semibold text-ink-900">{contact.name}</td>
                       <td className="px-4 py-4 text-sm text-ink-700">{contact.email}</td>
@@ -66,6 +77,13 @@ export default function ContactsPage() {
                       <td className="rounded-r-[22px] px-4 py-4"><Badge tone={contact.status === "Engaged" ? "green" : "default"}>{contact.status}</Badge></td>
                     </tr>
                   ))}
+                  {!visibleContacts.length ? (
+                    <tr>
+                      <td className="rounded-[22px] border border-dashed border-sand-100 bg-white px-4 py-8 text-sm text-ink-500" colSpan={4}>
+                        No contacts match the current search.
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
