@@ -29,6 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 	const [searchError, setSearchError] = useState<string | null>(null);
 	const [notificationsLoading, setNotificationsLoading] = useState(false);
 	const [notificationsError, setNotificationsError] = useState<string | null>(null);
+	const navItems = navigation;
 
 	const activeSection = useMemo(() => {
 		const current = navigation.find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)));
@@ -137,11 +138,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 						</div>
 
 						<nav className="space-y-1">
-							{navigation.map((item) => {
+							{navItems.map((item) => {
 								const Icon = item.icon;
 								const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 								return (
-									<Link key={item.href} href={item.href} className={`flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition ${active ? "bg-accent-50 text-accent-600 shadow-sm" : "text-ink-700 hover:bg-sand-50"}`}>
+									<Link key={item.href} href={item.href} title={item.label} className={`flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition ${active ? "bg-accent-50 text-accent-600 shadow-sm" : "text-ink-700 hover:bg-sand-50"}`}>
 										<span className="flex items-center gap-3">
 											<span className={`grid h-9 w-9 place-items-center rounded-2xl ${active ? "bg-white text-accent-600 shadow-sm" : "bg-sand-50 text-ink-500"}`}>
 												<Icon size={17} />
@@ -177,8 +178,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 								{navigation.map((item) => {
 									const Icon = item.icon;
 									const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-									return (
-										<Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium ${active ? "bg-accent-50 text-accent-600" : "text-ink-700 hover:bg-sand-50"}`}>
+										return (
+											<Link key={item.href} href={item.href} title={item.label} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium ${active ? "bg-accent-50 text-accent-600" : "text-ink-700 hover:bg-sand-50"}`}>
 											<Icon size={17} />
 											{item.label}
 										</Link>

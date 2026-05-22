@@ -1,14 +1,21 @@
-import type { ActivityItem, AudienceSegment, CampaignsResponse, ContactRow, ContactsResponse, DashboardResponse, DashboardStat, NotificationItem, PerformancePoint, SearchResult, SettingsPanel, SettingsResponse, WorkspaceProfile } from "./types";
+import type { ActivityItem, AudienceSegment, CampaignsResponse, ContactRow, ContactsResponse, DashboardResponse, DashboardStat, DashboardTrackingScores, NotificationItem, PerformancePoint, SearchResult, SettingsPanel, SettingsResponse, WorkspaceProfile } from "./types";
+import { settingsPanels } from "../config/settingsPanels";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "/api";
 
-const settingsPanels: SettingsPanel[] = [
-	{ title: "Brand profile", description: "Tune the workspace name, sender details, and support signature." },
-	{ title: "Delivery controls", description: "Review sending domain, timezone, and campaign delivery defaults." },
-	{ title: "Team readiness", description: "Keep role coverage and compliance cues visible for operators." }
-];
-
 type QueryValue = string | number | boolean | undefined | null;
+
+export class ApiError extends Error {
+	status: number;
+	details?: unknown;
+
+	constructor(message: string, status: number, details?: unknown) {
+		super(message);
+		this.name = "ApiError";
+		this.status = status;
+		this.details = details;
+	}
+}
 
 type BackendWorkspaceSettings = {
 	id: string;
@@ -70,6 +77,8 @@ type BackendActivityRecord = {
 	id: string;
 	title: string;
 	type: string;
+	entity_type: string;
+	entity_id: string | null;
 	details: Record<string, unknown>;
 	created_at: string;
 };
@@ -93,6 +102,7 @@ type BackendDashboardSummary = {
 	unreadNotifications: number;
 	activityCount: number;
 	settingsConfigured: boolean;
+	trackingScores: DashboardTrackingScores;
 };
 
 type BackendDashboardPerformance = {
@@ -113,10 +123,12 @@ function formatTime(value: string) {
 
 function toCampaignRow(record: BackendCampaignRecord) {
 	return {
+		id: record.id,
 		name: record.name,
 		audience: record.subject,
 		sent: record.sent_at ? formatTime(record.sent_at) : record.status === "scheduled" ? "Scheduled" : "Not sent",
-		opens: record.status === "live" ? "74%" : record.status === "scheduled" ? "Queued" : "—",
+		// opens used to be hardcoded; derive a placeholder based on sent_at if available
+		opens: record.sent_at ? "—" : record.status === "scheduled" ? "Queued" : "—",
 		status: capitalize(record.status),
 		tone: record.status === "live" ? "green" : record.status === "scheduled" ? "amber" : "slate"
 	} satisfies CampaignsResponse["items"][number];
@@ -124,11 +136,13 @@ function toCampaignRow(record: BackendCampaignRecord) {
 
 function toContactRow(record: BackendContactRecord, segmentName?: string) {
 	const name = [record.first_name, record.last_name].filter(Boolean).join(" ") || record.email.split("@")[0] || record.email;
+	const isUnsubscribed = Boolean(record.metadata?.unsubscribed);
 	return {
+		id: record.id,
 		name,
 		email: record.email,
 		segment: segmentName ?? "Unassigned",
-		status: capitalize(record.status)
+		status: isUnsubscribed ? "Unsubscribed" : capitalize(record.status)
 	} satisfies ContactRow;
 }
 
@@ -153,18 +167,28 @@ function toActivityItem(record: BackendActivityRecord) {
 	return {
 		title: record.title,
 		detail: record.details && Object.keys(record.details).length ? JSON.stringify(record.details) : record.type,
-		time: formatTime(record.created_at)
+		time: formatTime(record.created_at),
+		entityId: record.entity_id,
+		entityType: record.entity_type
 	} satisfies ActivityItem;
 }
 
 function toSettingsResponse(record: BackendWorkspaceSettings): SettingsResponse {
+	const preferences = record.preferences as Record<string, unknown>;
 	return {
-		panels: settingsPanels,
+		panels: [...settingsPanels],
 		workspace: {
 			name: record.company_name,
-			brandColor: String(record.preferences.brandColor ?? "#2f8f7b"),
-			supportSignature: String(record.preferences.supportSignature ?? record.default_sender_name),
-			sendingDomain: record.sending_domain ?? undefined
+			brandColor: String(preferences.brandColor ?? "#2f8f7b"),
+			supportSignature: String(preferences.supportSignature ?? record.default_sender_name),
+			sendingDomain: record.sending_domain ?? undefined,
+			globalUnsubscribeLabel: String(preferences.globalUnsubscribeLabel ?? "Unsubscribe"),
+			doubleOptInEnabled: Boolean(preferences.doubleOptInEnabled ?? false),
+			doubleOptInSequence: String(preferences.doubleOptInSequence ?? "Welcome sequence"),
+			postalAddress: String(preferences.postalAddress ?? ""),
+			webhookUrl: String(preferences.webhookUrl ?? ""),
+			apiToken: String(preferences.apiToken ?? ""),
+			preferences
 		}
 	};
 }
@@ -178,7 +202,14 @@ function toBackendSettingsUpdate(workspace: WorkspaceProfile) {
 		timezone: "UTC",
 		preferences: {
 			brandColor: workspace.brandColor,
-			supportSignature: workspace.supportSignature
+			supportSignature: workspace.supportSignature,
+			globalUnsubscribeLabel: workspace.globalUnsubscribeLabel,
+			doubleOptInEnabled: workspace.doubleOptInEnabled,
+			doubleOptInSequence: workspace.doubleOptInSequence,
+			postalAddress: workspace.postalAddress,
+			webhookUrl: workspace.webhookUrl,
+			apiToken: workspace.apiToken,
+			...(workspace.preferences ?? {})
 		}
 	};
 }
@@ -220,7 +251,20 @@ async function fetchJson<T>(path: string, query?: Record<string, QueryValue>, in
 	});
 
 	if (!response.ok) {
-		throw new Error(`Request failed with status ${response.status}`);
+		let message = `Request failed with status ${response.status}`;
+		let details: unknown;
+
+		try {
+			const errorBody = await response.json() as { error?: { message?: string; details?: unknown } };
+			if (errorBody?.error?.message) {
+				message = errorBody.error.message;
+			}
+			details = errorBody?.error?.details;
+		} catch {
+			// ignore non-JSON error responses
+		}
+
+		throw new ApiError(message, response.status, details);
 	}
 
 	const payload = await response.json() as T | { data: T };
@@ -252,6 +296,11 @@ export async function getDashboardData() {
 		value: Math.min(100, item.campaignsSent * 60 + item.contactsCreated * 20)
 	}));
 
+	// derive simple overview metrics for the send-quality panel
+	const engagementScore = summary.contacts.total ? Math.round((summary.contacts.engaged / Math.max(1, summary.contacts.total)) * 100) : null;
+	const deliverability = summary.campaigns.sent || summary.campaigns.scheduled ? Math.round((summary.campaigns.sent / Math.max(1, summary.campaigns.sent + summary.campaigns.scheduled)) * 100) : null;
+	const audienceFreshness = summary.contacts.total ? Math.round((summary.contacts.active / Math.max(1, summary.contacts.total)) * 100) : null;
+
 	const recentCampaignRows = recentCampaigns.map(toCampaignRow);
 	const activityRows = activities.slice(0, 4).map(toActivityItem);
 
@@ -259,24 +308,70 @@ export async function getDashboardData() {
 		stats: campaignStats,
 		performance: campaignPerformance,
 		recentCampaigns: recentCampaignRows,
-		activities: activityRows
+		activities: activityRows,
+		overview: {
+			engagementScore,
+			deliverability,
+			audienceFreshness,
+			trackingScores: summary.trackingScores
+		}
 	} satisfies DashboardResponse;
 }
 
-export async function getCampaigns(query?: { status?: string; search?: string }) {
+export async function getCampaigns(query?: { status?: string; search?: string; page?: number; limit?: number }) {
 	const response = await fetchJson<BackendPaginated<BackendCampaignRecord>>("/campaigns", {
 		status: query?.status,
-		q: query?.search
+		q: query?.search,
+		page: (query as any)?.page,
+		limit: (query as any)?.limit
 	});
 
 	return {
-		items: response.data.map(toCampaignRow)
-	} satisfies CampaignsResponse;
+		items: response.data.map(toCampaignRow),
+		total: response.total,
+		page: response.page,
+		limit: response.limit
+	} as unknown as CampaignsResponse & { total?: number; page?: number; limit?: number };
 }
 
-export async function getContacts(query?: { search?: string }) {
+export async function updateCampaign(campaignId: string, payload: Partial<{ name: string; subject: string; previewText: string | null; content: Record<string, unknown>; status: string; scheduledAt: string | null }>) {
+	const response = await fetchJson<BackendCampaignRecord>(`/campaigns/${campaignId}`, undefined, {
+		method: "PATCH",
+		body: JSON.stringify(payload)
+	});
+
+	return toCampaignRow(response);
+}
+
+export async function deleteCampaign(campaignId: string) {
+	return fetchJson<{ success: boolean }>(`/campaigns/${campaignId}`, undefined, {
+		method: "DELETE"
+	});
+}
+
+export async function createContact(payload: { email: string; firstName?: string | null; lastName?: string | null; status?: string; segmentId?: string | null; metadata?: Record<string, unknown> }) {
+	return fetchJson<BackendContactRecord>("/contacts", undefined, {
+		method: "POST",
+		body: JSON.stringify(payload)
+	});
+}
+
+export async function updateContact(contactId: string, payload: Partial<{ email: string; firstName: string | null; lastName: string | null; status: string; segmentId: string | null; metadata: Record<string, unknown> }>) {
+	return fetchJson<BackendContactRecord>(`/contacts/${contactId}`, undefined, {
+		method: "PATCH",
+		body: JSON.stringify(payload)
+	});
+}
+
+export async function deleteContact(contactId: string) {
+	return fetchJson<{ success: boolean }>(`/contacts/${contactId}`, undefined, {
+		method: "DELETE"
+	});
+}
+
+export async function getContacts(query?: { search?: string; page?: number; limit?: number }) {
 	const [contactsResponse, segmentsResponse] = await Promise.all([
-		fetchJson<BackendPaginated<BackendContactRecord>>("/contacts", { q: query?.search }),
+		fetchJson<BackendPaginated<BackendContactRecord>>("/contacts", { q: query?.search, page: (query as any)?.page, limit: (query as any)?.limit }),
 		fetchJson<BackendSegmentRecord[]>("/segments")
 	]);
 
@@ -291,8 +386,29 @@ export async function getContacts(query?: { search?: string }) {
 
 	return {
 		contacts: contactsResponse.data.map((contact) => toContactRow(contact, contact.segment_id ? segmentNames.get(contact.segment_id) : undefined)),
-		audienceSegments: segmentsResponse.map((segment) => toAudienceSegment(segment, segmentCounts.get(segment.id) ?? 0))
-	} satisfies ContactsResponse;
+		audienceSegments: segmentsResponse.map((segment) => toAudienceSegment(segment, segmentCounts.get(segment.id) ?? 0)),
+		total: contactsResponse.total,
+		page: contactsResponse.page,
+		limit: contactsResponse.limit
+	} as unknown as ContactsResponse & { total?: number; page?: number; limit?: number };
+}
+
+export async function createCampaign(payload: { name: string; subject: string; previewText?: string | null; content?: Record<string, unknown>; status?: string; scheduledAt?: string | null }) {
+	const response = await fetchJson<BackendCampaignRecord>("/campaigns", undefined, {
+		method: "POST",
+		body: JSON.stringify(payload)
+	});
+
+	return toCampaignRow(response);
+}
+
+export async function scheduleCampaign(campaignId: string, payload: { scheduledAt: string }) {
+	const response = await fetchJson<BackendCampaignRecord>(`/campaigns/${campaignId}/schedule`, undefined, {
+		method: "POST",
+		body: JSON.stringify(payload)
+	});
+
+	return toCampaignRow(response);
 }
 
 export async function getSettings() {
@@ -364,8 +480,12 @@ export async function getSearchResults(query: string) {
 	return { items: results.slice(0, 10) };
 }
 
-export async function getActivities() {
-	const response = await fetchJson<BackendActivityRecord[]>("/activities");
+export async function getActivities(query?: { limit?: number; entityId?: string; entityType?: string }) {
+	const response = await fetchJson<BackendActivityRecord[]>("/activities", {
+		limit: query?.limit,
+		entityId: query?.entityId,
+		entityType: query?.entityType
+	});
 	return {
 		items: response.map(toActivityItem)
 	};

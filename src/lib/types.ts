@@ -5,6 +5,13 @@ export type DashboardStat = {
 	tone: "accent" | "sand";
 };
 
+export type DashboardTrackingScores = {
+	campaignVelocity: number;
+	engagementRate: number;
+	workflowCoverage: number;
+	trackingScore: number;
+};
+
 export type PerformancePoint = {
 	label: string;
 	value: number;
@@ -13,6 +20,7 @@ export type PerformancePoint = {
 export type CampaignTone = "amber" | "green" | "slate";
 
 export type CampaignRow = {
+	id: string;
 	name: string;
 	audience: string;
 	sent: string;
@@ -25,9 +33,12 @@ export type ActivityItem = {
 	title: string;
 	detail: string;
 	time: string;
+	entityId?: string | null;
+	entityType?: string | null;
 };
 
 export type ContactRow = {
+	id: string;
 	name: string;
 	email: string;
 	segment: string;
@@ -57,6 +68,13 @@ export type WorkspaceProfile = {
 	brandColor: string;
 	supportSignature: string;
 	sendingDomain?: string;
+	globalUnsubscribeLabel?: string;
+	doubleOptInEnabled?: boolean;
+	doubleOptInSequence?: string;
+	postalAddress?: string;
+	webhookUrl?: string;
+	apiToken?: string;
+	preferences?: Record<string, unknown>;
 };
 
 export type DashboardResponse = {
@@ -64,6 +82,12 @@ export type DashboardResponse = {
 	performance: PerformancePoint[];
 	recentCampaigns: CampaignRow[];
 	activities: ActivityItem[];
+	overview?: {
+		engagementScore?: number | null;
+		deliverability?: number | null;
+		audienceFreshness?: number | null;
+		trackingScores?: DashboardTrackingScores | null;
+	};
 };
 
 export type CampaignsResponse = {

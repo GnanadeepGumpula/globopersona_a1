@@ -58,6 +58,16 @@ export default function DashboardPage() {
   const dashboardStats = dashboard?.stats ?? [];
   const recentCampaigns = dashboard?.recentCampaigns ?? [];
   const activities = dashboard?.activities ?? [];
+  const overview = dashboard?.overview;
+  const trackingScores = overview?.trackingScores;
+
+  const performanceChange = (() => {
+    if (campaignPerformance.length < 2) return null;
+    const last = campaignPerformance[campaignPerformance.length - 1].value;
+    const prev = campaignPerformance[campaignPerformance.length - 2].value || 1;
+    const delta = ((last - prev) / Math.max(1, prev)) * 100;
+    return `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% vs last week`;
+  })();
 
   if (!dashboard) {
     return (
@@ -73,6 +83,41 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  function TrendChart({ points }: { points: { x: number; y: number; value: number; label: string }[] }) {
+    if (!points || !points.length) {
+      return (
+        <div className="flex h-56 items-center justify-center rounded-2xl border border-dashed border-sand-100 bg-white/60 text-sm text-ink-500">
+          No recent performance data
+        </div>
+      );
+    }
+
+    const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+    const areaPath = points.length
+      ? `${linePath} L ${points[points.length - 1].x} ${chartFloor} L ${points[0].x} ${chartFloor} Z`
+      : "";
+
+    return (
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-full w-full" role="img" aria-label="Campaign performance trend chart">
+        {[25, 50, 75, 100].map((line) => {
+          const y = chartFloor - (line / 100) * (chartFloor - chartPaddingY);
+          return <line key={line} x1={chartPaddingX} y1={y} x2={chartWidth - chartPaddingX} y2={y} stroke="#efe7da" strokeDasharray="5 5" strokeWidth="1" />;
+        })}
+
+        {areaPath ? <path d={areaPath} fill="rgba(47, 143, 123, 0.12)" /> : null}
+        {linePath ? <path d={linePath} fill="none" stroke="#2f8f7b" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" /> : null}
+
+        {points.map((point) => (
+          <g key={point.label} className="cursor-pointer">
+            <title>{`${point.label}: ${point.value}%`}</title>
+            <circle cx={point.x} cy={point.y} r="5" fill="#2f8f7b" className="transition-all duration-150 hover:r-8" />
+            <circle cx={point.x} cy={point.y} r="3" fill="#ffffff" />
+          </g>
+        ))}
+      </svg>
     );
   }
 
@@ -104,7 +149,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-ink-500">Send quality</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl">94.8%</p>
+                <p className="mt-2 text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl">{overview?.deliverability != null ? `${overview.deliverability}%` : "—"}</p>
               </div>
               <div className="grid h-14 w-14 place-items-center rounded-3xl bg-accent-100 text-accent-600">
                 <Sparkles size={24} />
@@ -114,23 +159,47 @@ export default function DashboardPage() {
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-ink-500">
                   <span>Engagement score</span>
-                  <span>High</span>
+                  <span>{overview?.engagementScore != null ? `${overview.engagementScore}%` : "—"}</span>
                 </div>
-                <Progress value={84} />
+                <Progress value={overview?.engagementScore ?? 0} />
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-ink-500">
                   <span>Deliverability</span>
-                  <span>Stable</span>
+                  <span>{overview?.deliverability != null ? `${overview.deliverability}%` : "—"}</span>
                 </div>
-                <Progress value={92} />
+                <Progress value={overview?.deliverability ?? 0} />
               </div>
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-ink-500">
                   <span>Audience freshness</span>
-                  <span>Refreshing</span>
+                  <span>{overview?.audienceFreshness != null ? `${overview.audienceFreshness}%` : "—"}</span>
                 </div>
-                <Progress value={74} />
+                <Progress value={overview?.audienceFreshness ?? 0} />
+              </div>
+              <div className="rounded-[24px] border border-sand-100 bg-white/70 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink-500">Tracking score</p>
+                    <p className="mt-1 text-2xl font-bold tracking-tight text-ink-900">{trackingScores?.trackingScore != null ? `${trackingScores.trackingScore}%` : "—"}</p>
+                  </div>
+                  <Badge tone="accent">Live</Badge>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {[
+                    { label: "Campaign velocity", value: trackingScores?.campaignVelocity },
+                    { label: "Engagement rate", value: trackingScores?.engagementRate },
+                    { label: "Workflow coverage", value: trackingScores?.workflowCoverage }
+                  ].map((metric) => (
+                    <div key={metric.label}>
+                      <div className="mb-2 flex items-center justify-between text-sm text-ink-500">
+                        <span>{metric.label}</span>
+                        <span>{metric.value != null ? `${metric.value}%` : "—"}</span>
+                      </div>
+                      <Progress value={metric.value ?? 0} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -150,36 +219,23 @@ export default function DashboardPage() {
               <CardTitle>Campaign performance</CardTitle>
               <CardDescription>Weekly trend for opens, clicks, and scheduled sends.</CardDescription>
             </div>
-            <Badge tone="accent">+11.2% vs last week</Badge>
+            <Badge tone="accent">{performanceChange ?? "—"}</Badge>
           </CardHeader>
           <CardContent>
             <div className="rounded-[24px] border border-sand-100 bg-gradient-to-b from-white to-sand-50 p-5">
               <div className="relative h-56 overflow-hidden rounded-2xl border border-sand-100 bg-white">
-                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-full w-full" role="img" aria-label="Campaign performance trend chart">
-                  {[25, 50, 75, 100].map((line) => {
-                    const y = chartFloor - (line / 100) * (chartFloor - chartPaddingY);
-                    return <line key={line} x1={chartPaddingX} y1={y} x2={chartWidth - chartPaddingX} y2={y} stroke="#efe7da" strokeDasharray="5 5" strokeWidth="1" />;
-                  })}
-
-                  {areaPath ? <path d={areaPath} fill="rgba(47, 143, 123, 0.16)" /> : null}
-                  {linePath ? <path d={linePath} fill="none" stroke="#2f8f7b" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" /> : null}
-
-                  {points.map((point) => (
-                    <g key={point.label}>
-                      <circle cx={point.x} cy={point.y} r="6" fill="#2f8f7b" />
-                      <circle cx={point.x} cy={point.y} r="3" fill="#ffffff" />
-                    </g>
-                  ))}
-                </svg>
+                <TrendChart points={points} />
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-                {campaignPerformance.map((item) => (
-                  <div key={`${item.label}-meta`}>
-                    <p className="text-sm font-semibold text-ink-700">{item.label}</p>
+                {campaignPerformance.length ? campaignPerformance.map((item) => (
+                  <div key={`${item.label}-meta`} title={`${item.label}: ${item.value}%`} className="group">
+                    <p className="text-sm font-semibold text-ink-700 group-hover:text-accent-600">{item.label}</p>
                     <p className="text-xs text-ink-500">{item.value}%</p>
                   </div>
-                ))}
+                )) : (
+                  <div className="col-span-full text-sm text-ink-500">No performance points to display</div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -193,15 +249,14 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {activities.map((item) => (
-              <div key={item.title} className="rounded-[24px] border border-sand-100 bg-sand-50/80 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-semibold text-ink-900">{item.title}</p>
-                  <span className="text-xs font-medium text-ink-500">{item.time}</span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-ink-500">{item.detail}</p>
-              </div>
-            ))}
+            {activities.map((item, index) => (
+  <div key={index} className="rounded-[24px] border border-sand-100 bg-sand-50/80 p-4">
+    <div className="flex items-center justify-between gap-3">
+      <p className="font-semibold text-ink-900">{item.title}</p>
+      <span className="text-xs font-medium text-ink-500">{item.time}</span>
+    </div>
+  </div>
+))}
           </CardContent>
         </Card>
       </section>
@@ -217,8 +272,9 @@ export default function DashboardPage() {
               View all <ArrowRight size={16} />
             </Link>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-3">
+          <CardContent>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="min-w-full border-separate border-spacing-y-3">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-[0.2em] text-ink-500">
                   <th scope="col" className="px-4 pb-2">Campaign</th>
@@ -230,7 +286,7 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {recentCampaigns.map((campaign) => (
-                  <tr key={campaign.name} className="rounded-[22px] bg-white shadow-sm ring-1 ring-sand-100">
+                  <tr key={campaign.id} className="rounded-[22px] bg-white shadow-sm ring-1 ring-sand-100">
                     <td className="rounded-l-[22px] px-4 py-4">
                       <p className="font-semibold text-ink-900">{campaign.name}</p>
                       <p className="text-sm text-ink-500">Campaign workspace</p>
@@ -242,10 +298,11 @@ export default function DashboardPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-            <div className="mt-4 space-y-3 md:hidden">
+              </table>
+            </div>
+            <div className="space-y-3 md:hidden">
               {recentCampaigns.map((campaign) => (
-                <div key={`${campaign.name}-mobile`} className="rounded-[24px] border border-sand-100 bg-white p-4 shadow-sm">
+                <div key={`${campaign.id}-mobile`} className="rounded-[24px] border border-sand-100 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-ink-900">{campaign.name}</p>
@@ -272,30 +329,28 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Focus notes</CardTitle>
-              <CardDescription>Design cues used to keep the interface calm and professional.</CardDescription>
+              <CardTitle>Workspace health</CardTitle>
+              <CardDescription>Backend readiness and live data checks.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-[24px] border border-sand-100 bg-white p-4">
-              <p className="font-semibold text-ink-900">Soft contrast first</p>
-              <p className="mt-2 text-sm leading-6 text-ink-500">The palette uses warm neutrals, muted teal accents, and clear white surfaces instead of a dark or tech-heavy aesthetic.</p>
-            </div>
-            <div className="rounded-[24px] border border-sand-100 bg-white p-4">
-              <p className="font-semibold text-ink-900">Fewer, larger actions</p>
-              <p className="mt-2 text-sm leading-6 text-ink-500">Primary flows are surfaced with confident spacing, so the product feels like a real operations tool rather than a demo mockup.</p>
-            </div>
-            <div className="rounded-[24px] border border-sand-100 bg-white p-4">
-              <p className="font-semibold text-ink-900">Readable structure</p>
-              <p className="mt-2 text-sm leading-6 text-ink-500">Cards, tables, filters, and forms share the same radius, spacing, and border language for consistency.</p>
+              <p className="text-sm font-semibold text-ink-900">Backend status</p>
+              <p className="mt-2 text-sm leading-6 text-ink-500">Campaigns, contacts, settings, and notifications should be available via the API.</p>
+              <div className="mt-3 grid gap-2">
+                <div className="flex items-center justify-between text-sm text-ink-700"><span>Campaigns</span><span className="font-medium text-ink-900">{dashboard?.recentCampaigns?.length ? <span className="text-green-600">Connected</span> : <span className="text-ink-500">Unavailable</span>}</span></div>
+                <div className="flex items-center justify-between text-sm text-ink-700"><span>Contacts</span><span className="font-medium text-ink-900">{dashboard?.stats?.find(s => s.label === 'Contacts')?.value ? <span className="text-green-600">Connected</span> : <span className="text-ink-500">Unavailable</span>}</span></div>
+                <div className="flex items-center justify-between text-sm text-ink-700"><span>Settings</span><span className="font-medium text-ink-900">{overview ? <span className="text-green-600">Loaded</span> : <span className="text-ink-500">Pending</span>}</span></div>
+                <div className="flex items-center justify-between text-sm text-ink-700"><span>Notifications</span><span className="font-medium text-ink-900">{dashboard?.stats?.find(s => s.label === 'Alerts')?.value ? <span className="text-green-600">Active</span> : <span className="text-ink-500">Idle</span>}</span></div>
+              </div>
             </div>
             <div className="rounded-[24px] border border-sand-100 bg-gradient-to-br from-accent-50 to-white p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-ink-900">Approval readiness</p>
-                  <p className="text-xs text-ink-500">Good foundation for the assessment submission</p>
+                  <p className="text-sm font-semibold text-ink-900">Live data</p>
+                  <p className="text-xs text-ink-500">Counts and recent activity reflect the current API state.</p>
                 </div>
-                <TrendingUp className="text-accent-600" size={20} />
+                <Sparkles className="text-accent-600" size={20} />
               </div>
             </div>
           </CardContent>

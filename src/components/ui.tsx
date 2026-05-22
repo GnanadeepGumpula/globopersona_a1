@@ -24,7 +24,19 @@ export function Button({ className, variant = "primary", size = "md", ...props }
 
 	const { type, ...rest } = props as ButtonHTMLAttributes<HTMLButtonElement>;
 
-	return <button type={type ?? "button"} className={cn("inline-flex w-full items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto", variants[variant], sizes[size], className)} {...rest} />;
+	return (
+		<button
+			type={type ?? "button"}
+			className={cn(
+				"inline-flex w-full items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto focus:outline-none focus-visible:ring-4",
+				"focus-visible:ring-accent-100",
+				variants[variant],
+				sizes[size],
+				className
+			)}
+			{...rest}
+		/>
+	);
 }
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
@@ -71,9 +83,48 @@ export function Badge({ className, tone = "default", ...props }: HTMLAttributes<
 	return <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", tones[tone], className)} {...props} />;
 }
 
+export function Toast({ className, children, onClose, tone = "info", title }: { className?: string; children?: ReactNode; onClose?: () => void; tone?: "success" | "error" | "info"; title?: string }) {
+	const tones = {
+		success: "border-emerald-200 bg-emerald-50 text-emerald-900",
+		error: "border-orange-200 bg-orange-50 text-orange-900",
+		info: "border-sand-100 bg-white text-ink-900"
+	};
+	return (
+		<div className={cn("fixed right-6 bottom-6 z-50 w-full max-w-sm rounded-2xl border p-4 shadow-lift transition-all duration-300", tones[tone], className)} role="status" aria-live="polite">
+			<div className="flex items-start justify-between gap-3">
+				<div className="space-y-1 text-sm">
+					{title ? <p className="font-semibold">{title}</p> : null}
+					<div>{children}</div>
+				</div>
+				{onClose ? (
+					<button onClick={onClose} className="text-sm text-ink-500 hover:text-ink-700">Close</button>
+				) : null}
+			</div>
+		</div>
+	);
+}
+
+export function TableSkeleton({ rows = 4 }: { rows?: number }) {
+	return (
+		<div className="space-y-3">
+			{Array.from({ length: rows }).map((_, i) => (
+				<div key={i} className="animate-pulse rounded-[22px] bg-white p-4 shadow-sm ring-1 ring-sand-100">
+					<div className="h-4 w-1/3 rounded bg-sand-100" />
+					<div className="mt-3 grid grid-cols-4 gap-4">
+						<div className="h-4 rounded bg-sand-100" />
+						<div className="h-4 rounded bg-sand-100" />
+						<div className="h-4 rounded bg-sand-100" />
+						<div className="h-4 rounded bg-sand-100" />
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
 export function StatCard({ label, value, change, tone = "accent" }: { label: string; value: string; change: string; tone?: "accent" | "sand" }) {
 	return (
-		<Card className="p-0">
+		<Card className="p-0 transform transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
 			<CardContent className="space-y-3">
 				<div className="flex items-start justify-between gap-4">
 					<div>
@@ -83,7 +134,7 @@ export function StatCard({ label, value, change, tone = "accent" }: { label: str
 					<Badge tone={tone === "accent" ? "accent" : "default"}>{change}</Badge>
 				</div>
 				<div className={cn("h-1.5 rounded-full", tone === "accent" ? "bg-accent-100" : "bg-sand-100")}>
-					<div className={cn("h-full rounded-full", tone === "accent" ? "w-3/4 bg-accent-500" : "w-2/3 bg-amber-400")} />
+					<div className={cn("h-full rounded-full transition-all duration-200", tone === "accent" ? "w-3/4 bg-accent-500" : "w-2/3 bg-amber-400")} />
 				</div>
 			</CardContent>
 		</Card>
