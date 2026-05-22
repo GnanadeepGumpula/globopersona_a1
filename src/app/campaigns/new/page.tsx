@@ -18,7 +18,7 @@ export default function NewCampaignPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-3">
         <Badge tone="accent">Campaign builder</Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-ink-900">Create campaign</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">Create campaign</h1>
         <p className="max-w-3xl text-sm leading-6 text-ink-500">A direct, office-friendly campaign form that keeps the product structure familiar while improving spacing, labels, and section grouping.</p>
       </div>
 
@@ -63,7 +63,7 @@ export default function NewCampaignPage() {
               <Label>Campaign copy</Label>
               <Textarea defaultValue="Write the campaign body here. The layout keeps typography readable, section spacing calm, and editor controls out of the way." />
             </div>
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-1 lg:grid-cols-3">
               <div className="rounded-[24px] border border-sand-100 bg-sand-50 p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-ink-900"><Mail size={16} /> Email</div>
                 <p className="mt-2 text-sm text-ink-500">Primary channel</p>

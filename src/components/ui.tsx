@@ -22,7 +22,9 @@ export function Button({ className, variant = "primary", size = "md", ...props }
 		lg: "h-12 px-5 text-base"
 	};
 
-	return <button className={cn("inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50", variants[variant], sizes[size], className)} {...props} />;
+	const { type, ...rest } = props as ButtonHTMLAttributes<HTMLButtonElement>;
+
+	return <button type={type ?? "button"} className={cn("inline-flex w-full items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto", variants[variant], sizes[size], className)} {...rest} />;
 }
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
@@ -30,7 +32,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-	return <div className={cn("flex items-start justify-between gap-4 border-b border-sand-100 px-6 py-5", className)} {...props} />;
+	return <div className={cn("flex flex-col items-start justify-between gap-4 border-b border-sand-100 px-4 py-4 sm:px-6 sm:py-5 md:flex-row md:items-center", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
@@ -42,7 +44,7 @@ export function CardDescription({ className, ...props }: HTMLAttributes<HTMLPara
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-	return <div className={cn("px-6 py-6", className)} {...props} />;
+	return <div className={cn("px-4 py-4 sm:px-6 sm:py-6", className)} {...props} />;
 }
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
@@ -76,7 +78,7 @@ export function StatCard({ label, value, change, tone = "accent" }: { label: str
 				<div className="flex items-start justify-between gap-4">
 					<div>
 						<p className="text-sm font-medium text-ink-500">{label}</p>
-						<p className="mt-2 text-3xl font-bold tracking-tight text-ink-900">{value}</p>
+						<p className="mt-2 text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl">{value}</p>
 					</div>
 					<Badge tone={tone === "accent" ? "accent" : "default"}>{change}</Badge>
 				</div>

@@ -1,13 +1,46 @@
+"use client";
+
 import { ArrowRight, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { activities, campaignPerformance, dashboardStats, recentCampaigns } from "../data/mock-data";
+import { useEffect, useState } from "react";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress, StatCard } from "../components/ui";
+import { getDashboardData } from "../lib/api";
+import type { DashboardResponse } from "../lib/types";
 
 export default function DashboardPage() {
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      try {
+        setError(null);
+        const data = await getDashboardData();
+
+        if (isMounted) {
+          setDashboard(data);
+        }
+      } catch {
+        if (isMounted) {
+          setError("Unable to load dashboard data from the backend.");
+        }
+      }
+    };
+
+    void loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const chartWidth = 720;
   const chartHeight = 240;
   const chartPaddingX = 28;
   const chartPaddingY = 20;
+  const campaignPerformance = dashboard?.performance ?? [];
   const chartFloor = chartHeight - chartPaddingY;
   const step = campaignPerformance.length > 1 ? (chartWidth - chartPaddingX * 2) / (campaignPerformance.length - 1) : 0;
 
@@ -22,6 +55,27 @@ export default function DashboardPage() {
     ? `${linePath} L ${points[points.length - 1].x} ${chartFloor} L ${points[0].x} ${chartFloor} Z`
     : "";
 
+  const dashboardStats = dashboard?.stats ?? [];
+  const recentCampaigns = dashboard?.recentCampaigns ?? [];
+  const activities = dashboard?.activities ?? [];
+
+  if (!dashboard) {
+    return (
+      <div className="space-y-8">
+        <Card className="border-sand-100 bg-white/85">
+          <CardContent className="space-y-3 py-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-600">Connecting</p>
+            <h1 className="text-3xl font-bold tracking-tight text-ink-900">Loading dashboard from the backend</h1>
+            <p className="max-w-2xl text-sm leading-6 text-ink-500">
+              The frontend is ready to consume live campaign, contact, and settings data. Configure the API base URL and the dashboard will hydrate here.
+            </p>
+            {error ? <p className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm font-medium text-orange-700">{error}</p> : null}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <Card className="overflow-hidden border-sand-100 bg-white/85">
@@ -30,10 +84,10 @@ export default function DashboardPage() {
           <div className="relative space-y-6">
             <Badge tone="green">Morning briefing</Badge>
             <div className="space-y-4">
-              <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-ink-900 sm:text-5xl">A calm, confident workspace for email marketing teams.</h1>
+              <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl lg:text-5xl">A calm, confident workspace for email marketing teams.</h1>
               <p className="max-w-2xl text-base leading-7 text-ink-500">This redesign keeps the original product structure intact while giving the interface a cleaner hierarchy, softer surfaces, and more readable patterns for daily campaign work.</p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link href="/campaigns/new" className="inline-flex h-11 items-center justify-center rounded-2xl bg-ink-900 px-4 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-ink-700">
                 Launch new campaign
               </Link>
@@ -50,7 +104,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-ink-500">Send quality</p>
-                <p className="mt-2 text-3xl font-bold tracking-tight text-ink-900">94.8%</p>
+                <p className="mt-2 text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl">94.8%</p>
               </div>
               <div className="grid h-14 w-14 place-items-center rounded-3xl bg-accent-100 text-accent-600">
                 <Sparkles size={24} />
@@ -119,7 +173,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
 
-              <div className="mt-4 grid gap-3 text-center" style={{ gridTemplateColumns: `repeat(${campaignPerformance.length}, minmax(0, 1fr))` }}>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
                 {campaignPerformance.map((item) => (
                   <div key={`${item.label}-meta`}>
                     <p className="text-sm font-semibold text-ink-700">{item.label}</p>
@@ -167,11 +221,11 @@ export default function DashboardPage() {
             <table className="min-w-full border-separate border-spacing-y-3">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-[0.2em] text-ink-500">
-                  <th className="px-4 pb-2">Campaign</th>
-                  <th className="px-4 pb-2">Audience</th>
-                  <th className="px-4 pb-2">Sent</th>
-                  <th className="px-4 pb-2">Opens</th>
-                  <th className="px-4 pb-2">Status</th>
+                  <th scope="col" className="px-4 pb-2">Campaign</th>
+                  <th scope="col" className="px-4 pb-2">Audience</th>
+                  <th scope="col" className="px-4 pb-2">Sent</th>
+                  <th scope="col" className="px-4 pb-2">Opens</th>
+                  <th scope="col" className="px-4 pb-2">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,6 +243,29 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+            <div className="mt-4 space-y-3 md:hidden">
+              {recentCampaigns.map((campaign) => (
+                <div key={`${campaign.name}-mobile`} className="rounded-[24px] border border-sand-100 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-ink-900">{campaign.name}</p>
+                      <p className="mt-1 text-sm text-ink-500">{campaign.audience}</p>
+                    </div>
+                    <Badge tone={campaign.tone === "green" ? "green" : campaign.tone === "amber" ? "amber" : "slate"}>{campaign.status}</Badge>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-ink-500">Sent</p>
+                      <p className="font-semibold text-ink-900">{campaign.sent}</p>
+                    </div>
+                    <div>
+                      <p className="text-ink-500">Opens</p>
+                      <p className="font-semibold text-ink-900">{campaign.opens}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
