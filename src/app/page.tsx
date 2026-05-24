@@ -143,6 +143,27 @@ export default function DashboardPage() {
                 Open campaigns <ArrowRight size={16} />
               </Link>
             </div>
+
+            <div className="rounded-[28px] border border-sand-100 bg-white/80 p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-600">Daily tips</p>
+                  <h2 className="mt-2 text-lg font-bold tracking-tight text-ink-900">Small wins for today&apos;s campaign work</h2>
+                </div>
+                <Badge tone="green">Fresh ideas</Badge>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                {[
+                  "Check your audience freshness before sending to reduce wasted opens.",
+                  "Use the last high-performing subject line as a starting point, not a copy.",
+                  "Review recent activity first so you can spot what changed before the next send."
+                ].map((tip) => (
+                  <div key={tip} className="rounded-[22px] border border-sand-100 bg-sand-50/80 p-4">
+                    <p className="text-sm leading-6 text-ink-700">{tip}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="relative rounded-[32px] border border-sand-100 bg-gradient-to-br from-sand-50 to-white p-5 shadow-soft">

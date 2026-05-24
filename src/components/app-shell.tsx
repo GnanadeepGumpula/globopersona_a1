@@ -90,19 +90,27 @@ export function AppShell({ children }: { children: ReactNode }) {
 			return;
 		}
 
+		const trimmedQuery = searchQuery.trim();
+		if (!trimmedQuery) {
+			setSearchLoading(false);
+			setSearchError(null);
+			setSearchResults([]);
+			return;
+		}
+
 		let isMounted = true;
 		const timeout = window.setTimeout(async () => {
 			try {
 				setSearchLoading(true);
 				setSearchError(null);
-				const data = await getSearchResults(searchQuery.trim());
+				const data = await getSearchResults(trimmedQuery);
 
 				if (isMounted) {
 					setSearchResults(data.items);
 				}
 			} catch {
 				if (isMounted) {
-					setSearchError("Search is unavailable until the backend is connected.");
+					setSearchError("Search is temporarily unavailable right now.");
 					setSearchResults([]);
 				}
 			} finally {
@@ -276,13 +284,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 						</div>
 
 						<div className="mt-4 flex items-center justify-between gap-3">
-							<p className="text-sm text-ink-500">Showing {searchResults.length} result{searchResults.length === 1 ? "" : "s"}</p>
+							<p className="text-sm text-ink-500">{searchQuery.trim() ? `Showing ${searchResults.length} result${searchResults.length === 1 ? "" : "s"}` : "Start typing to search campaigns, contacts, activities, and settings."}</p>
 							<button type="button" className="text-sm font-semibold text-ink-500" onClick={() => setSearchOpen(false)}>Close</button>
 						</div>
 
 						<div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto pr-1">
 							{searchLoading ? <p className="rounded-2xl border border-dashed border-sand-100 p-5 text-sm text-ink-500">Loading search results...</p> : null}
 							{searchError ? <p className="rounded-2xl border border-dashed border-orange-100 bg-orange-50 p-5 text-sm text-orange-700">{searchError}</p> : null}
+							{!searchLoading && !searchError && !searchQuery.trim() ? <p className="rounded-2xl border border-dashed border-sand-100 p-5 text-sm text-ink-500">Type a campaign, contact, activity, or setting name to see results.</p> : null}
 							{!searchLoading && !searchError && searchResults.length ? searchResults.map((item) => (
 								<button key={`${item.group}-${item.title}`} type="button" onClick={() => openResult(item.href)} className="flex w-full items-start justify-between gap-4 rounded-2xl border border-sand-100 bg-white px-4 py-4 text-left transition hover:border-accent-100 hover:bg-accent-50/40">
 									<div>
