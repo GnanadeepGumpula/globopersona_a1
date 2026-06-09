@@ -75,6 +75,7 @@ export type WorkspaceProfile = {
 	webhookUrl?: string;
 	apiToken?: string;
 	preferences?: Record<string, unknown>;
+	timezone?: string; // Add this line
 };
 
 export type DashboardResponse = {
@@ -111,3 +112,4 @@ export type SearchResult = {
 	group: string;
 	keywords: string;
 };
+

@@ -16,6 +16,20 @@ const filters = [
   { label: "Archived", value: "archived" }
 ] as const;
 
+function getCampaignStage(status: string) {
+  const normalized = status.trim().toLowerCase();
+
+  if (normalized === "live" || normalized === "sent") {
+    return { label: "Sent", tone: "green" as const };
+  }
+
+  if (normalized === "scheduled") {
+    return { label: "Scheduled", tone: "accent" as const };
+  }
+
+  return { label: "Draft", tone: "slate" as const };
+}
+
 export default function CampaignsPage() {
   return (
     <Suspense fallback={<CampaignsSkeleton />}>
@@ -29,24 +43,24 @@ function CampaignsSkeleton() {
     <div className="space-y-8">
       <Card>
         <CardContent className="space-y-4 py-5">
-          <div className="h-4 w-32 animate-pulse rounded-md bg-sand-100" />
+          <div className="h-4 w-32 animate-pulse rounded-md bg-[#E7EEF8]" />
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <div className="h-10 animate-pulse rounded-2xl bg-sand-100" />
-            <div className="h-10 animate-pulse rounded-2xl bg-sand-100" />
-            <div className="h-10 animate-pulse rounded-2xl bg-sand-100" />
+            <div className="h-10 animate-pulse rounded-2xl bg-[#E7EEF8]" />
+            <div className="h-10 animate-pulse rounded-2xl bg-[#E7EEF8]" />
+            <div className="h-10 animate-pulse rounded-2xl bg-[#E7EEF8]" />
           </div>
         </CardContent>
       </Card>
       <Card>
         <CardContent className="space-y-3 py-6">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_0.8fr_0.5fr] gap-4 rounded-[22px] border border-sand-100 bg-white p-4 animate-pulse">
-              <div className="h-4 rounded-md bg-sand-100" />
-              <div className="h-4 rounded-md bg-sand-100" />
-              <div className="h-4 rounded-md bg-sand-100" />
-              <div className="h-4 rounded-md bg-sand-100" />
-              <div className="h-4 rounded-md bg-sand-100" />
-              <div className="h-4 rounded-md bg-sand-100" />
+            <div key={index} className="grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_0.8fr_0.5fr] gap-4 rounded-[20px] border border-[#E7EEF8] bg-white p-4 animate-pulse">
+              <div className="h-4 rounded-md bg-[#E7EEF8]" />
+              <div className="h-4 rounded-md bg-[#E7EEF8]" />
+              <div className="h-4 rounded-md bg-[#E7EEF8]" />
+              <div className="h-4 rounded-md bg-[#E7EEF8]" />
+              <div className="h-4 rounded-md bg-[#E7EEF8]" />
+              <div className="h-4 rounded-md bg-[#E7EEF8]" />
             </div>
           ))}
         </CardContent>
@@ -169,24 +183,18 @@ function CampaignsPageContent() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-600">Campaign center</p>
-        <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">Campaigns list</h1>
-        <p className="max-w-3xl text-sm leading-6 text-ink-500">A cleaner operational view with easy filtering, stronger row hierarchy, and visible status states.</p>
-      </div>
-
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 border-b border-sand-100 pb-5">
           <div className="inline-flex items-center gap-2 rounded-2xl border border-sand-100 bg-sand-50 px-4 py-2 text-sm font-medium text-ink-700">
             <Filter size={16} /> Filters
           </div>
           {filters.map((item) => (
-            <button key={item.value} type="button" onClick={() => setActiveFilter(item.value)} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${activeFilter === item.value ? "bg-ink-900 text-white shadow-sm" : "bg-white text-ink-700 hover:bg-sand-50"}`}>
+            <button key={item.value} type="button" onClick={() => setActiveFilter(item.value)} className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${activeFilter === item.value ? "bg-[#002D72] text-white shadow-sm" : "bg-white text-ink-700 hover:bg-[#F4F7FC]"}`}>
               {item.label}
             </button>
           ))}
           <div className="w-full min-w-0 sm:ml-auto sm:min-w-[240px] sm:flex-1 lg:flex-none">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search campaigns" className="h-11 w-full rounded-2xl border border-sand-200 bg-white px-4 text-sm text-ink-900 outline-none transition placeholder:text-ink-500 focus:border-accent-500 focus:ring-4 focus:ring-accent-100" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search campaigns" className="h-11 w-full rounded-2xl border border-[#D5DFED] bg-white px-4 text-sm text-ink-900 outline-none transition placeholder:text-ink-500 focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/20" />
           </div>
         </CardContent>
 
@@ -207,13 +215,13 @@ function CampaignsPageContent() {
                 Array.from({ length: 4 }).map((_, index) => (
                   <tr key={`campaign-skeleton-${index}`} aria-hidden="true">
                     <td className="px-4 py-3" colSpan={6}>
-                      <div className="grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_0.8fr_0.5fr] gap-4 rounded-[22px] border border-sand-100 bg-white p-4 animate-pulse">
-                        <div className="h-4 rounded-md bg-sand-100" />
-                        <div className="h-4 rounded-md bg-sand-100" />
-                        <div className="h-4 rounded-md bg-sand-100" />
-                        <div className="h-4 rounded-md bg-sand-100" />
-                        <div className="h-4 rounded-md bg-sand-100" />
-                        <div className="h-4 rounded-md bg-sand-100" />
+                      <div className="grid grid-cols-[1.6fr_1fr_0.9fr_0.9fr_0.8fr_0.5fr] gap-4 rounded-[20px] border border-[#E7EEF8] bg-white p-4 animate-pulse">
+                        <div className="h-4 rounded-md bg-[#E7EEF8]" />
+                        <div className="h-4 rounded-md bg-[#E7EEF8]" />
+                        <div className="h-4 rounded-md bg-[#E7EEF8]" />
+                        <div className="h-4 rounded-md bg-[#E7EEF8]" />
+                        <div className="h-4 rounded-md bg-[#E7EEF8]" />
+                        <div className="h-4 rounded-md bg-[#E7EEF8]" />
                       </div>
                     </td>
                   </tr>
@@ -227,7 +235,7 @@ function CampaignsPageContent() {
                 </tr>
               ) : null}
               {!loading && !error ? campaigns.map((campaign) => (
-                <tr key={campaign.id} title={`${campaign.name} • ${campaign.audience} • ${campaign.status}`} className="rounded-[22px] bg-white shadow-sm ring-1 ring-sand-100 hover:bg-sand-50/50 transition-colors cursor-pointer hover:ring-sand-200">
+                <tr key={campaign.id} title={`${campaign.name} • ${campaign.audience} • ${campaign.status}`} className="rounded-[20px] bg-white shadow-sm ring-1 ring-[#E7EEF8] hover:bg-[#F4F7FC]/70 transition-colors cursor-pointer hover:ring-[#DDE8FF]">
                   <td className="rounded-l-[22px] px-4 py-4">
                     <p className="font-semibold text-ink-900">{campaign.name}</p>
                     <p className="text-sm text-ink-500">Optimized preview subject and header</p>
@@ -235,23 +243,23 @@ function CampaignsPageContent() {
                   <td className="px-4 py-4 text-sm text-ink-700">{campaign.audience}</td>
                   <td className="px-4 py-4 text-sm text-ink-700">{campaign.sent}</td>
                   <td className="px-4 py-4 text-sm text-ink-700">{campaign.opens}</td>
-                  <td className="px-4 py-4"><Badge tone={campaign.tone === "green" ? "green" : campaign.tone === "amber" ? "amber" : "slate"}>{campaign.status}</Badge></td>
+                  <td className="px-4 py-4"><Badge tone={getCampaignStage(campaign.status).tone}>{getCampaignStage(campaign.status).label}</Badge></td>
                   <td className="rounded-r-[22px] px-4 py-4 text-right relative">
-                    <button type="button" onClick={(event) => { event.stopPropagation(); setMenuOpenFor(menuOpenFor === campaign.id ? null : campaign.id); }} className="inline-flex items-center gap-2 rounded-2xl border border-sand-100 bg-white px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-sand-50">
+                    <button type="button" onClick={(event) => { event.stopPropagation(); setMenuOpenFor(menuOpenFor === campaign.id ? null : campaign.id); }} className="inline-flex items-center gap-2 rounded-2xl border border-[#D5DFED] bg-white px-3 py-2 text-sm font-semibold text-ink-700 hover:bg-[#F4F7FC]">
                       Actions <ChevronDown size={14} />
                     </button>
                     {menuOpenFor === campaign.id ? (
-                      <div className="absolute right-0 top-11 z-20 w-56 rounded-2xl border border-sand-100 bg-white p-2 shadow-lift">
-                        <button type="button" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-sand-50" onClick={(event) => { event.stopPropagation(); void pauseResumeCampaign(campaign); setMenuOpenFor(null); }}>
+                      <div className="absolute right-0 top-11 z-20 w-56 rounded-[20px] border border-[#DDE8FF] bg-white p-2 shadow-lift">
+                        <button type="button" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-[#F4F7FC]" onClick={(event) => { event.stopPropagation(); void pauseResumeCampaign(campaign); setMenuOpenFor(null); }}>
                           {campaign.status === "Live" ? <PauseCircle size={14} /> : <PlayCircle size={14} />} Pause/Resume
                         </button>
-                        <button type="button" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-sand-50" onClick={(event) => { event.stopPropagation(); void duplicateCampaign(campaign); setMenuOpenFor(null); }}>
+                        <button type="button" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-[#F4F7FC]" onClick={(event) => { event.stopPropagation(); void duplicateCampaign(campaign); setMenuOpenFor(null); }}>
                           <Copy size={14} /> Duplicate Campaign Configurations
                         </button>
-                        <button type="button" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-sand-50" onClick={(event) => { event.stopPropagation(); void archiveCampaign(campaign); setMenuOpenFor(null); }}>
+                        <button type="button" className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-[#F4F7FC]" onClick={(event) => { event.stopPropagation(); void archiveCampaign(campaign); setMenuOpenFor(null); }}>
                           <Trash2 size={14} /> Archive/Soft-Delete
                         </button>
-                        <Link href="/campaigns/new" className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-sand-50" onClick={(event) => event.stopPropagation()}>
+                        <Link href="/campaigns/new" className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-[#F4F7FC]" onClick={(event) => event.stopPropagation()}>
                           <ArrowRight size={14} /> Edit configuration
                         </Link>
                       </div>
@@ -283,13 +291,13 @@ function CampaignsPageContent() {
           </table>
           <div className="mt-4 space-y-3 md:hidden">
               {campaigns.map((campaign) => (
-              <div key={`${campaign.id}-mobile`} className="rounded-[24px] border border-sand-100 bg-white p-4 shadow-sm">
+              <div key={`${campaign.id}-mobile`} className="rounded-[20px] border border-[#E7EEF8] bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-ink-900">{campaign.name}</p>
                     <p className="mt-1 text-sm text-ink-500">{campaign.audience}</p>
                   </div>
-                  <Badge tone={campaign.tone === "green" ? "green" : campaign.tone === "amber" ? "amber" : "slate"}>{campaign.status}</Badge>
+                  <Badge tone={getCampaignStage(campaign.status).tone}>{getCampaignStage(campaign.status).label}</Badge>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div>
@@ -303,13 +311,13 @@ function CampaignsPageContent() {
                 </div>
                 <div className="mt-4 text-right">
                     <div className="flex flex-wrap justify-end gap-2">
-                      <button type="button" className="inline-flex items-center gap-2 rounded-2xl border border-sand-100 bg-white px-3 py-2 text-sm font-semibold text-ink-700" onClick={() => void pauseResumeCampaign(campaign)}>
+                      <button type="button" className="inline-flex items-center gap-2 rounded-2xl border border-[#D5DFED] bg-white px-3 py-2 text-sm font-semibold text-ink-700" onClick={() => void pauseResumeCampaign(campaign)}>
                         <PauseCircle size={14} /> Pause/Resume
                       </button>
-                      <button type="button" className="inline-flex items-center gap-2 rounded-2xl border border-sand-100 bg-white px-3 py-2 text-sm font-semibold text-ink-700" onClick={() => void duplicateCampaign(campaign)}>
+                      <button type="button" className="inline-flex items-center gap-2 rounded-2xl border border-[#D5DFED] bg-white px-3 py-2 text-sm font-semibold text-ink-700" onClick={() => void duplicateCampaign(campaign)}>
                         <Copy size={14} /> Duplicate
                       </button>
-                      <button type="button" className="inline-flex items-center gap-2 rounded-2xl border border-sand-100 bg-white px-3 py-2 text-sm font-semibold text-ink-700" onClick={() => void archiveCampaign(campaign)}>
+                      <button type="button" className="inline-flex items-center gap-2 rounded-2xl border border-[#D5DFED] bg-white px-3 py-2 text-sm font-semibold text-ink-700" onClick={() => void archiveCampaign(campaign)}>
                         <Trash2 size={14} /> Archive
                       </button>
                     </div>
@@ -317,7 +325,7 @@ function CampaignsPageContent() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex flex-col gap-3 rounded-[24px] border border-sand-100 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-[#DDE8FF] bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-ink-500">{total !== null ? `Page ${page} • ${total} total` : `Page ${page}`}</div>
             <div className="flex gap-2">
               <button
@@ -327,7 +335,7 @@ function CampaignsPageContent() {
                   updatePagination(next);
                 }}
                 disabled={page <= 1 || loading}
-                className="rounded-2xl border border-sand-100 bg-white px-3 py-2 text-sm transition-colors hover:bg-sand-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-2xl border border-[#D5DFED] bg-white px-3 py-2 text-sm transition-colors hover:bg-[#F4F7FC] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
               </button>
@@ -338,7 +346,7 @@ function CampaignsPageContent() {
                   updatePagination(next);
                 }}
                 disabled={isLastPage || loading}
-                className="rounded-2xl border border-sand-100 bg-white px-3 py-2 text-sm transition-colors hover:bg-sand-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-2xl border border-[#D5DFED] bg-white px-3 py-2 text-sm transition-colors hover:bg-[#F4F7FC] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
               </button>
@@ -398,7 +406,7 @@ function CampaignsPageContent() {
         </Card>
       </section>
 
-      {toast ? <Toast tone={toast.tone} title={toast.title} onClose={() => setToast(null)}>{toast.message}</Toast> : null}
+      {toast ? <Toast message={toast.message} type="success" onClose={() => setToast(null)} /> : null}
     </div>
   );
 }
