@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { AppShell } from "../components/app-shell";
+import DeveloperBadge from "../components/DeveloperBadge";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang="en" className={plusJakartaSans.variable} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <AppShell>{children}</AppShell>
+        <DeveloperBadge />
       </body>
     </html>
   );
