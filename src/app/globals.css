@@ -34,6 +34,29 @@ a {
 	background: rgba(0, 74, 173, 0.18);
 }
 
+@keyframes floatSoft {
+	0%, 100% { transform: translateY(0px); }
+	50% { transform: translateY(-4px); }
+}
+
+@keyframes chartFlow {
+	0% { stroke-dashoffset: 380; }
+	100% { stroke-dashoffset: 0; }
+}
+
+.soft-float {
+	animation: floatSoft 2.7s ease-in-out infinite;
+}
+
+.soft-glow {
+	box-shadow: 0 18px 45px rgba(0, 45, 114, 0.18);
+}
+
+.chart-line {
+	stroke-dasharray: 380;
+	animation: chartFlow 1.6s ease-out forwards;
+}
+
 .glass-card {
 	backdrop-filter: blur(12px);
 	background: rgba(255, 255, 255, 0.88);

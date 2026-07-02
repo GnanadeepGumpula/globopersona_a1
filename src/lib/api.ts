@@ -42,9 +42,12 @@ type BackendCampaignRecord = {
 	id: string;
 	name: string;
 	subject: string;
+	preview_text: string | null;
+	content: Record<string, unknown> | null;
 	status: "draft" | "scheduled" | "live" | "archived";
 	scheduled_at: string | null;
 	sent_at: string | null;
+	created_at: string;
 	updated_at: string;
 };
 
@@ -127,10 +130,11 @@ function toCampaignRow(record: BackendCampaignRecord) {
 		name: record.name,
 		audience: record.subject,
 		sent: record.sent_at ? formatTime(record.sent_at) : record.status === "scheduled" ? "Scheduled" : "Not sent",
-		// opens used to be hardcoded; derive a placeholder based on sent_at if available
 		opens: record.sent_at ? "—" : record.status === "scheduled" ? "Queued" : "—",
 		status: capitalize(record.status),
-		tone: record.status === "live" ? "green" : record.status === "scheduled" ? "amber" : "slate"
+		tone: record.status === "live" ? "green" : record.status === "scheduled" ? "amber" : "slate",
+		subject: record.subject,
+		clicks: record.status === "live" ? "—" : "—"
 	} satisfies CampaignsResponse["items"][number];
 }
 
@@ -215,15 +219,18 @@ function toBackendSettingsUpdate(workspace: WorkspaceProfile) {
 }
 
 function resolveApiBaseUrl() {
+	// If the environment explicitly contains an absolute URL, prefer it (works in browser and server)
+	if (apiBaseUrl && (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://"))) {
+		return apiBaseUrl.replace(/\/$/, "") + "/";
+	}
+
+	// Otherwise, when running in the browser, resolve relative API paths against the current origin
 	if (typeof window !== "undefined") {
-		return new URL("/api/", window.location.origin).toString();
+		return new URL(apiBaseUrl || "/api/", window.location.origin).toString();
 	}
 
-	if (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")) {
-		return apiBaseUrl;
-	}
-
-	return `http://localhost:3000${apiBaseUrl.startsWith("/") ? apiBaseUrl : `/${apiBaseUrl}`}/`;
+	// Server-side fallback: assume localhost:3000 when no absolute URL provided
+	return `http://localhost:3000${apiBaseUrl && apiBaseUrl.startsWith("/") ? apiBaseUrl : `/${apiBaseUrl || "api"}`}/`;
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>) {
@@ -318,6 +325,10 @@ export async function getDashboardData() {
 	} satisfies DashboardResponse;
 }
 
+export async function getCampaign(campaignId: string) {
+	return fetchJson<BackendCampaignRecord>(`/campaigns/${campaignId}`);
+}
+
 export async function getCampaigns(query?: { status?: string; search?: string; page?: number; limit?: number }) {
 	const response = await fetchJson<BackendPaginated<BackendCampaignRecord>>("/campaigns", {
 		status: query?.status,
@@ -340,7 +351,7 @@ export async function updateCampaign(campaignId: string, payload: Partial<{ name
 		body: JSON.stringify(payload)
 	});
 
-	return toCampaignRow(response);
+	return response;
 }
 
 export async function deleteCampaign(campaignId: string) {
