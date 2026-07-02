@@ -1,6 +1,6 @@
 import path from "node:path";
 
-const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN ?? "https://globopersona-a1-backend.vercel.app";
+const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN ?? (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://globopersona-a1-backend.vercel.app");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

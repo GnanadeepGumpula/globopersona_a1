@@ -224,13 +224,15 @@ function resolveApiBaseUrl() {
 		return apiBaseUrl.replace(/\/$/, "") + "/";
 	}
 
+	const normalizedApiBaseUrl = (apiBaseUrl || "/api").replace(/\/$/, "");
+
 	// Otherwise, when running in the browser, resolve relative API paths against the current origin
 	if (typeof window !== "undefined") {
-		return new URL(apiBaseUrl || "/api/", window.location.origin).toString();
+		return new URL(`${normalizedApiBaseUrl}/`, window.location.origin).toString();
 	}
 
 	// Server-side fallback: assume localhost:3000 when no absolute URL provided
-	return `http://localhost:3000${apiBaseUrl && apiBaseUrl.startsWith("/") ? apiBaseUrl : `/${apiBaseUrl || "api"}`}/`;
+	return `http://localhost:3000${normalizedApiBaseUrl.startsWith("/") ? normalizedApiBaseUrl : `/${normalizedApiBaseUrl}`}/`;
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>) {

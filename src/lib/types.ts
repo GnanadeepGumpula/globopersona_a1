@@ -27,6 +27,8 @@ export type CampaignRow = {
 	opens: string;
 	status: string;
 	tone: CampaignTone;
+	subject?: string;
+	clicks?: string;
 };
 
 export type ActivityItem = {

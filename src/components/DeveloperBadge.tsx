@@ -36,8 +36,8 @@ const DeveloperBadge: React.FC = () => {
 const styles: { [key: string]: React.CSSProperties } = {
   badge: {
     position: "fixed",
-    bottom: "20px",
-    right: "20px",
+    bottom: "40px",
+    right: "100px",
     display: "flex",
     alignItems: "center",
     gap: "8px",
